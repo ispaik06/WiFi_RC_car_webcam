@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control Panel</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+            margin: 0;
+        }
+        #title {
+            background-color: #d3d3d3;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            width: 80%;
+            margin-bottom: 30px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+        #directionDisplay {
+            font-size: 24px;
+            color: blue;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        #directionText {
+            font-weight: bold;
+        }
+        #speedControlContainer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        #speedValue {
+            font-size: 20px;
+            margin-top: 10px;
+        }
+        #speedControl {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 300px;
+            height: 10px;
+            background: linear-gradient(to right, #ff7e5f, #feb47b);
+            outline: none;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        #speedControl::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            background: url('https://emojipedia-us.s3.amazonaws.com/source/skype/289/automobile_1f697.png') no-repeat center center;
+            background-size: cover;
+            width: var(--thumb-size, 30px);
+            height: var(--thumb-size, 30px);
+            border: none;
+            cursor: pointer;
+        }
+        #speedControl::-moz-range-thumb {
+            background: url('https://emojipedia-us.s3.amazonaws.com/source/skype/289/automobile_1f697.png') no-repeat center center;
+            background-size: cover;
+            width: var(--thumb-size, 30px);
+            height: var(--thumb-size, 30px);
+            border: none;
+            cursor: pointer;
+        }
+        .spacer {
+            margin-top: 20px;
+        }
+        .arrow-keys {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .arrow-row {
+            display: flex;
+        }
+        .arrow-key {
+            width: 50px;
+            height: 50px;
+            background-color: #d3d3d3;
+            border: 2px solid #888;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 5px;
+            font-size: 24px;
+            font-weight: bold;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+            cursor: pointer;
+        }
+        .arrow-key.active {
+            background-color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div id="title">
+        <h1>Raspberry Pi WiFi Controlled Car: Control Panel</h1>
+    </div>
+    <div id="directionDisplay">Direction: <span id="directionText"></span></div>
+    <div class="spacer"></div>
+    <div class="arrow-keys">
+        <div class="arrow-row">
+            <div id="arrowUp" class="arrow-key">↑</div>
+        </div>
+        <div class="arrow-row">
+            <div id="arrowLeft" class="arrow-key">←</div>
+            <div id="arrowDown" class="arrow-key">↓</div>
+            <div id="arrowRight" class="arrow-key">→</div>
+        </div>
+    </div>
+    <div id="speedControlContainer">
+        <label for="speedControl">Speed:</label>
+        <input type="range" id="speedControl" min="0" max="255" value="255">
+        <span id="speedValue">255</span>
+    </div>
+    <script>
+        $(document).ready(function() {
+            var directionText = $('#directionText');
+            var direction = '';
+            var speed = $('#speedControl').val();
+    
+            $('#speedControl').on('input', function() {
+                speed = $(this).val();
+                $('#speedValue').text(speed);
+                sendDirection(direction, speed);
+
+                // Update thumb size based on speed
+                var newSize = 30 + (speed / 10); // Increase size based on speed
+                document.documentElement.style.setProperty('--thumb-size', newSize + 'px');
+            });
+
+            function handleDirectionChange(direction) {
+                sendDirection(direction, speed);
+                directionText.text(direction);
+            }
+
+            $(document).on('keydown', function(e) {
+                switch (e.keyCode) {
+                    case 37: // 좌 화살표
+                        direction = 'Turn left';
+                        $('#arrowLeft').addClass('active');
+                        handleDirectionChange(direction);
+                        break;
+                    case 38: // 상 화살표
+                        direction = 'Forward';
+                        $('#arrowUp').addClass('active');
+                        handleDirectionChange(direction);
+                        break;
+                    case 39: // 우 화살표
+                        direction = 'Turn right';
+                        $('#arrowRight').addClass('active');
+                        handleDirectionChange(direction);
+                        break;
+                    case 40: // 하 화살표
+                        direction = 'Backward';
+                        $('#arrowDown').addClass('active');
+                        handleDirectionChange(direction);
+                        break;
+                    case 74: // 'j' 키
+                        direction = 'Servo turn left';
+                        handleDirectionChange(direction);
+                        break;
+                    case 76: // 'l' 키
+                        direction = 'Servo turn right';
+                        handleDirectionChange(direction);
+                        break;
+                    case 73: // 'i' 키
+                        direction = 'Servo up';
+                        handleDirectionChange(direction);
+                        break;
+                    case 75: // 'k' 키
+                        direction = 'Servo down';
+                        handleDirectionChange(direction);
+                        break;
+                }
+            });
+    
+            $(document).on('keyup', function(e) {
+                if ((e.keyCode >= 37 && e.keyCode <= 40) || [74, 76, 73, 75].includes(e.keyCode)) {
+                    direction = 'Stop';
+                    sendDirection(direction, speed);
+                }
+                switch (e.keyCode) {
+                    case 37: // 좌 화살표
+                        $('#arrowLeft').removeClass('active');
+                        break;
+                    case 38: // 상 화살표
+                        $('#arrowUp').removeClass('active');
+                        break;
+                    case 39: // 우 화살표
+                        $('#arrowRight').removeClass('active');
+                        break;
+                    case 40: // 하 화살표
+                        $('#arrowDown').removeClass('active');
+                        break;
+                }
+            });
+
+            // 모바일 터치 이벤트 처리
+            $('.arrow-key').on('mousedown touchstart', function() {
+                var arrowId = $(this).attr('id');
+                var keyCode;
+                switch (arrowId) {
+                    case 'arrowUp':
+                        keyCode = 38;
+                        break;
+                    case 'arrowDown':
+                        keyCode = 40;
+                        break;
+                    case 'arrowLeft':
+                        keyCode = 37;
+                        break;
+                    case 'arrowRight':
+                        keyCode = 39;
+                        break;
+                }
+                if (keyCode) {
+                    $(document).trigger($.Event('keydown', { keyCode: keyCode }));
+                }
+            });
+
+            $('.arrow-key').on('mouseup touchend', function() {
+                var arrowId = $(this).attr('id');
+                var keyCode;
+                switch (arrowId) {
+                    case 'arrowUp':
+                        keyCode = 38;
+                        break;
+                    case 'arrowDown':
+                        keyCode = 40;
+                        break;
+                    case 'arrowLeft':
+                        keyCode = 37;
+                        break;
+                    case 'arrowRight':
+                        keyCode = 39;
+                        break;
+                }
+                if (keyCode) {
+                    $(document).trigger($.Event('keyup', { keyCode: keyCode }));
+                }
+            });
+    
+            function sendDirection(direction, speed) {
+                $.ajax({
+                    url: '/move',
+                    type: 'POST',
+                    data: {direction: direction, speed: speed},
+                    success: function(response) {
+                        console.log('Direction:', direction, 'Speed:', speed);
+                        directionText.text(direction);
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
